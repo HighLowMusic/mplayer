@@ -438,14 +438,22 @@ function togglePlay() {
   if (!isPlaying) {
     isPlaying = true;
     btn.classList.remove('paused');
-    playPromise = audio.play();
-    if (playPromise) playPromise.catch(() => { isPlaying = false; btn.classList.add('paused'); });
+    const p = audio.play();
+    if (p !== undefined) {
+      playPromise = p;
+      p.then(() => {
+        // success
+      }).catch((e) => {
+        isPlaying = false;
+        btn.classList.add('paused');
+        console.log('play error:', e);
+      });
+    }
   } else {
-    if (playPromise) {
-      playPromise.then(() => { audio.pause(); });
-    } else { audio.pause(); }
     isPlaying = false;
     btn.classList.add('paused');
+    audio.pause();
+    playPromise = null;
   }
 }
 
