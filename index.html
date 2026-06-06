@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Player</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%; width: 100%;
+  font-family: -apple-system, 'Noto Sans JP', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #000;
+  overflow: hidden;
+}
+
+/* ── 배경 ── */
+.bg {
+  position: fixed; inset: 0; z-index: 0;
+}
+.bg-art {
+  position: absolute; inset: -80px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(72px) brightness(0.55) saturate(1.6);
+  transform: scale(1.15);
+  transition: background-image 0.8s ease;
+}
+.bg-gradient {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg,
+    rgba(0,0,0,0.25) 0%,
+    rgba(0,0,0,0.10) 30%,
+    rgba(0,0,0,0.55) 75%,
+    rgba(0,0,0,0.85) 100%
+  );
+}
+
+/* ── 플레이어 ── */
+.player {
+  position: relative; z-index: 1;
+  width: 100%; height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── 앨범아트 ── */
+.art-wrap {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  height: 58dvh;
+  align-items: flex-end;
+}
+.art-shadow {
+  position: relative;
+  width: min(72vw, 340px);
+  aspect-ratio: 1;
+  margin-bottom: -8px;
+  border-radius: 14px;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4);
+  animation: artFloat 6s ease-in-out infinite;
+}
+@keyframes artFloat {
+  0%,100% { transform: translateY(0px); }
+  50%      { transform: translateY(-8px); }
+}
+.art-shadow img {
+  width: 100%; height: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── 하단 패널 ── */
+.info-panel {
+  width: 100%;
+  max-width: 440px;
+  padding: 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* 트랙 정보 */
+.track-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.track-meta { flex: 1; min-width: 0; }
+.track-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  margin-bottom: 5px;
+}
+.track-artist {
+  font-size: 15px;
+  color: rgba(255,255,255,0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.btn-heart {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.4);
+  transition: color 0.2s, transform 0.2s;
+}
+.btn-heart:hover { color: #fff; transform: scale(1.1); }
+.btn-heart svg { width: 24px; height: 24px; }
+
+/* 프로그레스 */
+.progress-area { display: flex; flex-direction: column; gap: 8px; }
+.progress-track {
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 99px;
+  cursor: pointer;
+  position: relative;
+}
+.progress-track::before {
+  content: '';
+  position: absolute; inset: -8px 0;
+}
+.progress-fill {
+  height: 100%;
+  background: #fff;
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.1s linear;
+  position: relative;
+}
+.time-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 컨트롤 */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+.btn {
+  background: none; border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  transition: opacity 0.15s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { opacity: 0.6; transform: scale(0.92); }
+.btn-sm { width: 40px; height: 40px; color: rgba(255,255,255,0.75); }
+.btn-sm svg { width: 26px; height: 26px; }
+.btn-sm.dim { color: rgba(255,255,255,0.3); }
+.btn-play {
+  width: 68px; height: 68px;
+  background: #fff;
+  border-radius: 50%;
+  color: #000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-play:active { transform: scale(0.92); }
+.btn-play svg { width: 28px; height: 28px; margin-left: 3px; }
+.btn-play.paused svg.play  { display: block; }
+.btn-play.paused svg.pause { display: none; }
+.btn-play svg.play  { display: none; }
+.btn-play svg.pause { display: block; }
+
+/* 트랙 인디케이터 */
+.track-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.track-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transition: background 0.3s, transform 0.3s;
+  cursor: pointer;
+}
+.track-dot.active {
+  background: #fff;
+  transform: scale(1.3);
+}
+
+/* 가사 */
+.lyric-bar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.lyric-current {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.7);
+  font-family: 'Noto Sans JP', sans-serif;
+  letter-spacing: 0.3px;
+  text-align: center;
+  transition: opacity 0.3s;
+  position: relative;
+}
+.lyric-current::after {
+  content: '';
+  position: absolute;
+  bottom: -3px; left: 0; right: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.25);
+}
+
+/* 볼륨 */
+.extras {
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+  padding-bottom: max(28px, env(safe-area-inset-bottom, 28px));
+}
+.volume-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.vol-icon { color: rgba(255,255,255,0.5); flex-shrink: 0; }
+.vol-icon svg { width: 16px; height: 16px; }
+.volume-slider {
+  flex: 1; height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 99px;
+  cursor: pointer; position: relative;
+}
+.volume-fill {
+  height: 100%; width: 70%;
+  background: rgba(255,255,255,0.8);
+  border-radius: 99px;
+  transition: width 0.1s;
+}
+
+/* 로딩 */
+.loading-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: #000;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.6s ease;
+}
+.loading-overlay.done { opacity: 0; pointer-events: none; }
+.loader {
+  width: 36px; height: 36px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: rgba(255,255,255,0.8);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 에러 */
+.error-msg {
+  position: fixed; inset: 0; z-index: 100;
+  background: #111;
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px; color: #fff; text-align: center; padding: 24px;
+}
+.error-msg.show { display: flex; }
+
+@media (min-width: 600px) {
+  body { display: flex; align-items: center; justify-content: center; background: #1a1a1a; }
+  .player { width: 390px; height: 844px; border-radius: 24px; overflow: hidden; position: relative; }
+  .bg { border-radius: 24px; overflow: hidden; box-shadow: 0 40px 120px rgba(0,0,0,0.7); }
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loader"></div>
+</div>
+
+<div class="error-msg" id="errorMsg">
+  <div style="font-size:48px">⚠️</div>
+  <div style="font-size:18px;font-weight:600" id="errorTitle">곡을 불러올 수 없어요</div>
+  <div style="font-size:14px;color:rgba(255,255,255,0.5)" id="errorDetail"></div>
+</div>
+
+<div class="bg">
+  <div class="bg-art" id="bgArt"></div>
+  <div class="bg-gradient"></div>
+</div>
+
+<div class="player">
+  <div class="art-wrap">
+    <div class="art-shadow">
+      <img id="albumArt" src="" alt="cover">
+    </div>
+  </div>
+
+  <div class="info-panel">
+    <div class="track-row">
+      <div class="track-meta">
+        <div class="track-title" id="trackTitle">Loading...</div>
+        <div class="track-artist" id="trackArtist"></div>
+      </div>
+      <button class="btn btn-heart" id="btnHeart" onclick="toggleHeart()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="progress-area">
+      <div class="progress-track" id="progressTrack">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="time-row">
+        <span id="currentTime">0:00</span>
+        <span id="totalTime">0:00</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-sm" id="btnRepeat" onclick="toggleRepeat()" title="반복">
+        <svg viewBox="0 0 24 24" fill="currentColor" id="iconRepeat" style="opacity:0.35">
+          <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+        </svg>
+      </button>
+
+      <button class="btn btn-sm" id="btnPrev" onclick="prevTrack()">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/>
+        </svg>
+      </button>
+
+      <button class="btn btn-play paused" id="btnPlay" onclick="togglePlay()">
+        <svg class="play" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+        <svg class="pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      </button>
+
+      <button class="btn btn-sm" id="btnNext" onclick="nextTrack()">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z"/>
+        </svg>
+      </button>
+
+      <button class="btn btn-sm" onclick="toggleShuffle()" id="btnShuffle" title="셔플">
+        <svg viewBox="0 0 24 24" fill="currentColor" id="iconShuffle" style="opacity:0.35">
+          <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- 트랙 인디케이터 (여러 트랙일 때만 표시) -->
+    <div class="track-dots" id="trackDots"></div>
+
+    <!-- 가사 한 줄 -->
+    <div class="lyric-bar">
+      <div class="lyric-current" id="lyricCurrent">♪</div>
+    </div>
+
+    <!-- 볼륨 -->
+    <div class="extras">
+      <div class="volume-wrap">
+        <span class="vol-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        </span>
+        <div class="volume-slider" id="volSlider" onclick="setVolume(event)">
+          <div class="volume-fill" id="volFill"></div>
+        </div>
+        <span class="vol-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<audio id="audio" preload="auto"></audio>
+
+<script>
+// ── URL 파라미터 파싱 ──
+const params   = new URLSearchParams(location.search);
+const albumId  = params.get('album') || '';
+const startNo  = parseInt(params.get('track') || '1', 10);
+const BASE     = albumId ? `albums/${albumId}` : '';
+
+// ── 상태 ──
+let albumInfo   = null;
+let tracks      = [];
+let currentIdx  = 0;
+let isPlaying   = false;
+let playPromise = null;
+let hearted     = false;
+let repeat      = false;
+let shuffle     = false;
+let vol         = 0.8;
+let shuffleOrder = [];
+
+const audio = document.getElementById('audio');
+audio.volume = vol;
+document.getElementById('volFill').style.width = (vol * 100) + '%';
+
+// ── 앨범 로드 ──
+async function loadAlbum() {
+  if (!albumId) {
+    showError('앨범 정보 없음', 'URL에 ?album=앨범명 을 추가해주세요');
+    return;
+  }
+  try {
+    const res  = await fetch(`${BASE}/info.json`);
+    if (!res.ok) throw new Error('info.json 없음');
+    albumInfo  = await res.json();
+    tracks     = albumInfo.tracks;
+
+    // 앨범 아트
+    const coverUrl = `${BASE}/cover.jpg`;
+    document.getElementById('albumArt').src   = coverUrl;
+    document.getElementById('bgArt').style.backgroundImage = `url('${coverUrl}')`;
+
+    // 아티스트
+    document.getElementById('trackArtist').textContent = albumInfo.artist;
+
+    // 트랙 dots
+    renderDots();
+
+    // 시작 트랙
+    currentIdx = Math.max(0, Math.min(startNo - 1, tracks.length - 1));
+    loadTrack(currentIdx);
+
+    // 이미지 로드 완료 후 로딩 숨김
+    document.getElementById('albumArt').onload = () => {
+      setTimeout(() => document.getElementById('loadingOverlay').classList.add('done'), 400);
+    };
+    document.getElementById('albumArt').onerror = () => {
+      document.getElementById('loadingOverlay').classList.add('done');
+    };
+
+  } catch(e) {
+    showError('앨범을 불러올 수 없어요', e.message);
+  }
+}
+
+// ── 트랙 로드 ──
+function loadTrack(idx) {
+  const track = tracks[idx];
+  if (!track) return;
+  currentIdx = idx;
+
+  document.getElementById('trackTitle').textContent = track.title;
+  document.title = `${track.title} — ${albumInfo.artist}`;
+  audio.src = `${BASE}/tracks/${track.file}`;
+  audio.load();
+
+  // dots 업데이트
+  document.querySelectorAll('.track-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === idx);
+  });
+
+  // 재생 중이었으면 계속 재생
+  if (isPlaying) {
+    playAudio();
+  }
+}
+
+// ── dots 렌더 ──
+function renderDots() {
+  const container = document.getElementById('trackDots');
+  container.innerHTML = '';
+  if (tracks.length <= 1) return; // 1곡이면 dots 숨김
+  tracks.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'track-dot' + (i === currentIdx ? ' active' : '');
+    dot.onclick = () => { loadTrack(i); if(!isPlaying) togglePlay(); };
+    container.appendChild(dot);
+  });
+}
+
+// ── 재생 ──
+function playAudio() {
+  const p = audio.play();
+  if (p !== undefined) {
+    playPromise = p;
+    p.then(() => {
+      isPlaying = true;
+      document.getElementById('btnPlay').classList.remove('paused');
+    }).catch(e => {
+      isPlaying = false;
+      document.getElementById('btnPlay').classList.add('paused');
+      console.log('play error:', e);
+    });
+  }
+}
+
+function togglePlay() {
+  if (!isPlaying) {
+    playAudio();
+  } else {
+    if (playPromise) {
+      playPromise.then(() => { audio.pause(); playPromise = null; });
+    } else {
+      audio.pause();
+    }
+    isPlaying = false;
+    document.getElementById('btnPlay').classList.add('paused');
+  }
+}
+
+// ── 트랙 이동 ──
+function nextTrack() {
+  if (shuffle) {
+    const next = shuffleOrder.shift();
+    if (shuffleOrder.length === 0) buildShuffleOrder();
+    loadTrack(next);
+  } else {
+    const next = (currentIdx + 1) % tracks.length;
+    loadTrack(next);
+  }
+  if (!isPlaying) togglePlay();
+}
+
+function prevTrack() {
+  // 3초 이상 재생됐으면 처음으로, 아니면 이전 트랙
+  if (audio.currentTime > 3) {
+    audio.currentTime = 0;
+  } else {
+    const prev = (currentIdx - 1 + tracks.length) % tracks.length;
+    loadTrack(prev);
+  }
+}
+
+// ── 곡 끝나면 자동 다음 트랙 ──
+audio.addEventListener('ended', () => {
+  if (repeat) {
+    audio.currentTime = 0;
+    playAudio();
+  } else if (tracks.length > 1 || shuffle) {
+    nextTrack();
+  } else {
+    // 단일 트랙이고 반복 아니면 정지
+    isPlaying = false;
+    document.getElementById('btnPlay').classList.add('paused');
+    audio.currentTime = 0;
+  }
+});
+
+// ── 토글들 ──
+function toggleRepeat() {
+  repeat = !repeat;
+  document.getElementById('iconRepeat').style.opacity = repeat ? '1' : '0.35';
+  audio.loop = false; // 직접 관리
+}
+
+function toggleShuffle() {
+  shuffle = !shuffle;
+  document.getElementById('iconShuffle').style.opacity = shuffle ? '1' : '0.35';
+  if (shuffle) buildShuffleOrder();
+}
+
+function buildShuffleOrder() {
+  shuffleOrder = tracks.map((_, i) => i).filter(i => i !== currentIdx);
+  for (let i = shuffleOrder.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffleOrder[i], shuffleOrder[j]] = [shuffleOrder[j], shuffleOrder[i]];
+  }
+}
+
+function toggleHeart() {
+  hearted = !hearted;
+  const btn = document.getElementById('btnHeart');
+  btn.style.color = hearted ? '#ff4b6e' : '';
+  btn.querySelector('svg').setAttribute('fill', hearted ? '#ff4b6e' : 'none');
+}
+
+function setVolume(e) {
+  const r = e.currentTarget.getBoundingClientRect();
+  vol = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  audio.volume = vol;
+  document.getElementById('volFill').style.width = (vol * 100) + '%';
+}
+
+// ── 프로그레스 ──
+let dragging = false;
+document.getElementById('progressTrack').addEventListener('pointerdown', e => {
+  dragging = true;
+  seekTo(e);
+  e.currentTarget.setPointerCapture(e.pointerId);
+});
+document.getElementById('progressTrack').addEventListener('pointermove', e => {
+  if (dragging) seekTo(e);
+});
+document.getElementById('progressTrack').addEventListener('pointerup', () => dragging = false);
+
+function seekTo(e) {
+  const r = document.getElementById('progressTrack').getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  if (audio.duration) audio.currentTime = pct * audio.duration;
+}
+
+function fmt(s) {
+  if (!s || isNaN(s)) return '0:00';
+  return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+}
+
+// ── 메인 루프 ──
+function tick() {
+  const t   = audio.currentTime;
+  const dur = audio.duration || 0;
+  const pct = dur ? (t / dur * 100) : 0;
+
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('currentTime').textContent  = fmt(t);
+  document.getElementById('totalTime').textContent    = fmt(dur);
+
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+// ── 에러 표시 ──
+function showError(title, detail) {
+  document.getElementById('loadingOverlay').classList.add('done');
+  document.getElementById('errorMsg').classList.add('show');
+  document.getElementById('errorTitle').textContent  = title;
+  document.getElementById('errorDetail').textContent = detail || '';
+}
+
+// ── 시작 ──
+loadAlbum();
+</script>
+</body>
+</html>
