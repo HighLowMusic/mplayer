@@ -235,6 +235,9 @@ html, body {
   transition: opacity 0.3s;
   position: relative;
 }
+.lyric-current {
+  transition: opacity 0.2s ease;
+}
 .lyric-current::after {
   content: '';
   position: absolute;
@@ -512,11 +515,48 @@ function fmt(s) {
 }
 
 // ── 메인 루프 ──
+// ── 가사 데이터 (타임코드 + 가사) ──
+const lyrics = [
+  [4.5,   "きみとわかれてもそらはまぶしくきれい"],
+  [9.2,   "ここちよくめざめてそばでぼくをみてわらう"],
+  [19.0,  "ときはすぎてみていてもまだあいたいきみだよ"],
+  [26.5,  "なぜかにくんでたあいたはじめにもどろう"],
+  [37.0,  "なにをいうかこわいいまはなれない"],
+  [42.5,  "ふたりはかるはずみにおわりといったのかな"],
+  [52.5,  "ときはすぎてみていてもまだあいたいきみだよ"],
+  [60.0,  "なぜかにくんでたあいたはじめにもどろう"],
+  [71.5,  "またそうなるねもうはなしてみるのはどう"],
+  [78.0,  "すこしならんであるけばいいかな"],
+  [90.0,  "ときはすぎてみていてもまだあいたいきみだよ"],
+  [97.5,  "なぜかにくんでたあいたはじめにもどろう"],
+];
+
+function getCurrentLyric(t) {
+  let cur = null;
+  for (let i = 0; i < lyrics.length; i++) {
+    if (t >= lyrics[i][0]) cur = lyrics[i][1];
+    else break;
+  }
+  return cur;
+}
+
 function tick() {
   const t   = audio.currentTime;
   const pct = t / TOTAL * 100;
   document.getElementById('progressFill').style.width = pct + '%';
   document.getElementById('currentTime').textContent  = fmt(t);
+
+  // 가사 업데이트
+  const lyric = getCurrentLyric(t);
+  const el = document.getElementById('lyricCurrent');
+  if (lyric && el.textContent !== lyric) {
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.textContent = lyric;
+      el.style.opacity = '1';
+    }, 200);
+  }
+
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
