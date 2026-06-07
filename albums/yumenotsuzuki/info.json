@@ -1,0 +1,10 @@
+{
+  "title": "夢の続き",
+  "artist": "HIERAKI (ヒエラキ)",
+  "artistId": "HIERAKI",
+  "releaseDate": "2026-05-01",
+  "tracks": [
+    { "no": 1, "title": "夢の続き", "file": "01.mp3", "duration": "3:21" },
+    { "no": 2, "title": "夢の続き (Instrumental)", "file": "02.mp3", "duration": "3:21" }
+  ]
+}
