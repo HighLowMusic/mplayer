@@ -35,17 +35,17 @@ html, body {
   width: 100%; height: 100dvh;
   display: flex; flex-direction: column;
   align-items: center; justify-content: flex-end;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
 }
 
 .art-wrap {
   position: absolute; top: 0; left: 0; right: 0;
   display: flex; justify-content: center;
-  height: 58dvh; align-items: flex-end;
+  height: 50dvh; align-items: flex-end;
 }
 .art-shadow {
   position: relative;
-  width: min(72vw, 340px); aspect-ratio: 1;
+  width: min(58vw, 280px); aspect-ratio: 1;
   margin-bottom: -8px; border-radius: 14px;
   box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4);
   animation: artFloat 6s ease-in-out infinite;
@@ -62,13 +62,13 @@ html, body {
 .info-panel {
   width: 100%; max-width: 440px;
   padding: 0 28px;
-  display: flex; flex-direction: column; gap: 18px;
+  display: flex; flex-direction: column; gap: 14px;
 }
 
 .track-row { display: flex; align-items: flex-start; justify-content: space-between; }
 .track-meta { flex: 1; min-width: 0; }
 .track-title {
-  font-size: 22px; font-weight: 700; color: #fff;
+  font-size: 20px; font-weight: 700; color: #fff;
   letter-spacing: -0.4px; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
   line-height: 1.2; margin-bottom: 5px;
@@ -267,23 +267,7 @@ html, body {
 .mini-play svg.play  { display: none; }
 .mini-play svg.pause { display: block; }
 
-.extras {
-  display: flex; align-items: center; padding: 0 2px;
-  padding-bottom: max(28px, env(safe-area-inset-bottom, 28px));
-}
-.volume-wrap { flex: 1; display: flex; align-items: center; gap: 10px; }
-.vol-icon { color: rgba(255,255,255,0.5); flex-shrink: 0; }
-.vol-icon svg { width: 16px; height: 16px; }
-.volume-slider {
-  flex: 1; height: 4px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 99px; cursor: pointer;
-}
-.volume-fill {
-  height: 100%; width: 70%;
-  background: rgba(255,255,255,0.8);
-  border-radius: 99px; transition: width 0.1s;
-}
+
 
 .loading-overlay {
   position: fixed; inset: 0; z-index: 100;
@@ -398,15 +382,7 @@ html, body {
       <div class="lyric-current" id="lyricCurrent">♪</div>
     </div>
 
-    <div class="extras">
-      <div class="volume-wrap">
-        <span class="vol-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></span>
-        <div class="volume-slider" onclick="setVolume(event)">
-          <div class="volume-fill" id="volFill"></div>
-        </div>
-        <span class="vol-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg></span>
-      </div>
-    </div>
+
   </div>
 </div>
 
@@ -471,7 +447,7 @@ let lyricsData  = [];
 
 const audio = document.getElementById('audio');
 audio.volume = vol;
-document.getElementById('volFill').style.width = (vol * 100) + '%';
+
 
 // ── 앨범 로드 ──
 async function loadAlbum() {
@@ -682,12 +658,7 @@ function toggleHeart() {
   btn.querySelector('svg').setAttribute('fill', hearted ? '#ff4b6e' : 'none');
 }
 
-function setVolume(e) {
-  const r = e.currentTarget.getBoundingClientRect();
-  vol = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-  audio.volume = vol;
-  document.getElementById('volFill').style.width = (vol * 100) + '%';
-}
+
 
 // ── 프로그레스 드래그 ──
 let dragging = false;
