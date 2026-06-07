@@ -79,7 +79,9 @@ html, body {
 .track-artist {
   font-size: 15px; color: rgba(255,255,255,0.5);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color 0.2s;
 }
+.track-artist:active { color: rgba(255,255,255,0.85); }
 .btn-heart {
   width: 36px; height: 36px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -338,7 +340,7 @@ html, body {
     <div class="track-row">
       <div class="track-meta">
         <div class="track-title" id="trackTitle">Loading...</div>
-        <div class="track-artist" id="trackArtist"></div>
+        <div class="track-artist" id="trackArtist" onclick="goToArtist()" style="cursor:pointer"></div>
       </div>
       <button class="btn btn-heart" id="btnHeart" onclick="toggleHeart()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -439,6 +441,12 @@ let hearted = false, repeatMode = 0, shuffle = false;
 let shuffleOrder = [], lyricsData = [], lastLyricIdx = -1;
 
 const audio = document.getElementById('audio');
+
+function goToArtist() {
+  if (albumInfo && albumInfo.artistId) {
+    location.href = `artist.html?name=${albumInfo.artistId}`;
+  }
+}
 
 async function loadAlbum() {
   if (!albumId) { showError('앨범 정보 없음', 'URL에 ?album=앨범명 을 추가해주세요'); return; }
