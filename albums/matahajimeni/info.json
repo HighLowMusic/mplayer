@@ -1,0 +1,8 @@
+{
+  "title": "またはじめに",
+  "artist": "HIERAKI (ヒエラキ)",
+  "tracks": [
+    { "no": 1, "title": "またはじめに", "file": "01.mp3", "duration": "2:51" },
+    { "no": 2, "title": "またはじめに (Instrumental)", "file": "02.mp3", "duration": "2:51" }
+  ]
+}
