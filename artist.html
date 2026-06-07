@@ -197,8 +197,12 @@ async function loadArtist() {
     if (!res.ok) throw new Error('artists.json 없음');
     const artists = await res.json();
 
-    const artist = artists[artistId];
-    if (!artist) throw new Error('아티스트를 찾을 수 없어요');
+    // artistId로 찾고, 없으면 name으로 검색
+    let artist = artists[artistId];
+    if (!artist) {
+      artist = Object.values(artists).find(a => a.name === artistId || decodeURIComponent(artistId) === a.name);
+    }
+    if (!artist) throw new Error('아티스트를 찾을 수 없어요: ' + artistId);
 
     document.title = artist.name;
     document.getElementById('artistName').textContent = artist.name;

@@ -443,9 +443,9 @@ let shuffleOrder = [], lyricsData = [], lastLyricIdx = -1;
 const audio = document.getElementById('audio');
 
 function goToArtist() {
-  if (albumInfo && albumInfo.artistId) {
-    location.href = `artist.html?name=${albumInfo.artistId}`;
-  }
+  if (!albumInfo) return;
+  const id = albumInfo.artistId || albumInfo.artist;
+  location.href = `artist.html?name=${encodeURIComponent(id)}`;
 }
 
 async function loadAlbum() {
