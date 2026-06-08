@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lyrics Sync Tool — HighLow Music</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, sans-serif;
+  background: #0a0a0a; color: #fff;
+  min-height: 100vh; padding: 32px 16px;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 640px; margin: 0 auto; }
+h1 { font-size: 20px; font-weight: 700; margin-bottom: 24px; color: #fff; }
+h1 span { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.4); margin-left: 8px; }
+
+.card {
+  background: #161616; border: 0.5px solid #2a2a2a;
+  border-radius: 14px; padding: 20px; margin-bottom: 16px;
+}
+.card-title { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 12px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+input[type=file] { font-size: 13px; color: rgba(255,255,255,0.7); width: 100%; }
+textarea {
+  width: 100%; background: #0f0f0f; border: 0.5px solid #2a2a2a;
+  border-radius: 8px; color: #fff; font-size: 13px;
+  padding: 10px 12px; resize: vertical; font-family: inherit;
+}
+textarea:focus { outline: none; border-color: #444; }
+
+audio { width: 100%; margin-top: 12px; filter: invert(1); }
+
+.controls { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+button {
+  background: #222; border: 0.5px solid #333; color: #fff;
+  border-radius: 8px; padding: 7px 16px; font-size: 13px;
+  cursor: pointer; transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+button:hover { background: #2a2a2a; }
+button.primary { background: #fff; color: #000; border-color: transparent; }
+button.primary:hover { background: #e0e0e0; }
+
+.time-display {
+  font-size: 13px; color: rgba(255,255,255,0.5);
+  font-variant-numeric: tabular-nums; min-width: 90px;
+}
+input[type=range] { width: 100%; margin-top: 10px; accent-color: #fff; }
+
+.lyric-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 8px;
+  margin-bottom: 4px; transition: background 0.2s;
+}
+.lyric-row.active { background: rgba(255,255,255,0.08); }
+.lyric-num { font-size: 11px; color: rgba(255,255,255,0.25); min-width: 18px; text-align: right; }
+.lyric-text { flex: 1; font-size: 14px; }
+.lyric-time {
+  width: 65px; background: #0f0f0f; border: 0.5px solid #2a2a2a;
+  border-radius: 6px; color: #fff; font-size: 12px;
+  padding: 5px 8px; text-align: center; font-variant-numeric: tabular-nums;
+}
+.lyric-time:focus { outline: none; border-color: #444; }
+.stamp-btn {
+  padding: 5px 10px; font-size: 11px; white-space: nowrap;
+  background: #1a1a1a; border-color: #333;
+}
+.stamp-btn:active { background: #2a2a2a; }
+.stamped { color: #4ade80; }
+
+.output-area { position: relative; }
+.output-area textarea { height: 220px; font-family: 'SF Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.7); }
+.copy-btn { position: absolute; top: 10px; right: 10px; padding: 5px 12px; font-size: 11px; }
+
+.hint { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 8px; line-height: 1.5; }
+
+#lyricsSection { display: none; }
+#audioSection .controls { display: none; }
+#audioSection.ready .controls { display: flex; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Lyrics Sync Tool <span>HighLow Music</span></h1>
+
+  <div class="card" id="audioSection">
+    <div class="card-title">1. MP3 파일 선택</div>
+    <input type="file" id="audioFile" accept="audio/mp3,audio/mpeg">
+    <audio id="audio" preload="auto"></audio>
+    <div class="controls">
+      <button id="btnPlay" onclick="togglePlay()">▶ 재생</button>
+      <button onclick="skip(-5)">−5초</button>
+      <button onclick="skip(-2)">−2초</button>
+      <button onclick="skip(2)">+2초</button>
+      <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+    </div>
+    <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1" oninput="seekTo(this.value)" style="display:none;">
+  </div>
+
+  <div class="card">
+    <div class="card-title">2. 가사 붙여넣기</div>
+    <textarea id="lyricsInput" rows="8" placeholder="가사를 한 줄씩 붙여넣으세요"></textarea>
+    <div class="controls" style="margin-top:10px;">
+      <button class="primary" onclick="initLyrics()">가사 불러오기</button>
+    </div>
+  </div>
+
+  <div class="card" id="lyricsSection">
+    <div class="card-title">3. 타임스탬프 찍기</div>
+    <div class="hint" style="margin-bottom:12px;">재생하면서 각 줄이 시작될 때 버튼을 눌러주세요. 초 단위 직접 입력도 가능해요.</div>
+    <div id="lyricsList"></div>
+  </div>
+
+  <div class="card" id="outputSection" style="display:none;">
+    <div class="card-title">4. lyrics.json 복사</div>
+    <div class="output-area">
+      <textarea id="preview" readonly></textarea>
+      <button class="copy-btn" onclick="copyJSON()" id="copyBtn">복사</button>
+    </div>
+    <p class="hint">복사 후 → 텍스트 편집기에 붙여넣기 → lyrics.json 으로 저장 → 앨범 폴더에 넣고 Push</p>
+  </div>
+</div>
+
+<audio id="audio" preload="auto"></audio>
+
+<script>
+const audio = document.getElementById('audio');
+let lyrics = [];
+
+document.getElementById('audioFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  audio.src = URL.createObjectURL(file);
+  audio.load();
+  document.getElementById('audioSection').classList.add('ready');
+  document.getElementById('seekBar').style.display = 'block';
+});
+
+audio.addEventListener('timeupdate', () => {
+  const t = audio.currentTime, d = audio.duration || 0;
+  document.getElementById('timeDisplay').textContent = fmt(t) + ' / ' + fmt(d);
+  document.getElementById('seekBar').value = d ? (t / d * 100) : 0;
+  highlightCurrent(t);
+});
+
+audio.addEventListener('ended', () => {
+  document.getElementById('btnPlay').textContent = '▶ 재생';
+});
+
+function togglePlay() {
+  if (audio.paused) {
+    audio.play();
+    document.getElementById('btnPlay').textContent = '⏸ 일시정지';
+  } else {
+    audio.pause();
+    document.getElementById('btnPlay').textContent = '▶ 재생';
+  }
+}
+
+function skip(s) { audio.currentTime = Math.max(0, audio.currentTime + s); }
+function seekTo(v) { if (audio.duration) audio.currentTime = v / 100 * audio.duration; }
+function fmt(s) {
+  if (!s || isNaN(s)) return '0:00';
+  return Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0');
+}
+
+function initLyrics() {
+  const raw = document.getElementById('lyricsInput').value.trim();
+  if (!raw) return;
+  lyrics = raw.split('\n').filter(l => l.trim()).map(l => ({ text: l.trim(), time: null }));
+  renderLyrics();
+  document.getElementById('lyricsSection').style.display = 'block';
+  document.getElementById('outputSection').style.display = 'block';
+  updatePreview();
+}
+
+function renderLyrics() {
+  const list = document.getElementById('lyricsList');
+  list.innerHTML = '';
+  lyrics.forEach((l, i) => {
+    const row = document.createElement('div');
+    row.className = 'lyric-row';
+    row.id = 'row' + i;
+    row.innerHTML = `
+      <span class="lyric-num">${i+1}</span>
+      <span class="lyric-text">${l.text}</span>
+      <input class="lyric-time" type="number" id="time${i}" placeholder="초"
+        value="${l.time !== null ? l.time : ''}" min="0" step="0.1"
+        onchange="setTime(${i}, this.value)">
+      <button class="stamp-btn" onclick="stamp(${i})">● 찍기</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function stamp(i) {
+  const t = Math.round(audio.currentTime * 10) / 10;
+  lyrics[i].time = t;
+  const inp = document.getElementById('time' + i);
+  inp.value = t;
+  inp.classList.add('stamped');
+  const row = document.getElementById('row' + i);
+  row.style.background = 'rgba(74,222,128,0.08)';
+  setTimeout(() => { row.style.background = ''; }, 500);
+  updatePreview();
+}
+
+function setTime(i, val) {
+  lyrics[i].time = val === '' ? null : parseFloat(val);
+  updatePreview();
+}
+
+function highlightCurrent(t) {
+  let cur = -1;
+  lyrics.forEach((l, i) => { if (l.time !== null && t >= l.time) cur = i; });
+  lyrics.forEach((_, i) => {
+    const row = document.getElementById('row' + i);
+    if (row) row.classList.toggle('active', i === cur);
+  });
+}
+
+function updatePreview() {
+  const data = lyrics.map(l => ({ time: l.time !== null ? l.time : 0, text: l.text }));
+  document.getElementById('preview').value = JSON.stringify(data, null, 2);
+}
+
+function copyJSON() {
+  const ta = document.getElementById('preview');
+  ta.select();
+  document.execCommand('copy');
+  const btn = document.getElementById('copyBtn');
+  btn.textContent = '복사됨 ✓';
+  setTimeout(() => { btn.textContent = '복사'; }, 1500);
+}
+</script>
+</body>
+</html>
