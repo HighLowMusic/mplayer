@@ -41,17 +41,23 @@ html, body {
 
 /* ── 앨범아트 — 애플뮤직 스타일 ── */
 .art-wrap {
-  position: absolute; top: 0; left: 0; right: 0;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   display: flex; justify-content: center;
-  height: 56dvh; align-items: center;
+  align-items: center;
   padding-top: max(48px, env(safe-area-inset-top, 48px));
+  padding-bottom: 320px;
+  pointer-events: none;
+  overflow: hidden;
 }
 .art-shadow {
   width: min(68vw, 320px);
+  max-height: 100%;
   aspect-ratio: 1;
   border-radius: 16px;
   box-shadow: 0 32px 72px rgba(0,0,0,0.65), 0 8px 24px rgba(0,0,0,0.4);
   animation: artFloat 6s ease-in-out infinite;
+  pointer-events: auto;
+  flex-shrink: 1;
 }
 @keyframes artFloat {
   0%,100% { transform: translateY(0px) scale(1); }
@@ -303,7 +309,7 @@ html, body {
 
   .art-wrap {
     padding-top: 64px;
-    height: 54dvh;
+    padding-bottom: 300px;
   }
 
   .art-shadow {
@@ -651,8 +657,13 @@ function updateLyricsSync(t) {
   lastLyricIdx = cur;
   const el = document.getElementById('lyricCurrent');
   if (cur >= 0) {
+    el.style.transition = 'opacity 0.15s';
     el.style.opacity = '0';
-    setTimeout(() => { el.textContent = lyricsData[cur].text; el.style.opacity = '1'; }, 200);
+    setTimeout(() => {
+      el.textContent = lyricsData[cur].text;
+      void el.offsetHeight;
+      el.style.opacity = '1';
+    }, 160);
   }
   lyricsData.forEach((_, i) => {
     const line = document.getElementById(`ll${i}`);
