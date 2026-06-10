@@ -1,0 +1,10 @@
+{
+  "title": "Always Move",
+  "artist": "큐림",
+  "artistId": "Qrym",
+  "releaseDate": "2026-05-01",
+  "tracks": [
+    { "no": 1, "title": "Always Move", "file": "01.mp3", "duration": "2:34" },
+    { "no": 2, "title": "Always Move (Instrumental)", "file": "02.mp3", "duration": "2:34" }
+  ]
+}
