@@ -163,7 +163,7 @@ html, body {
 
 /* 가사 한 줄 */
 .lyric-bar {
-  height: 38px; display: flex;
+  min-height: 38px; display: flex;
   align-items: center; justify-content: center;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
@@ -173,6 +173,8 @@ html, body {
   font-family: 'Noto Sans JP', sans-serif;
   letter-spacing: 0.3px; text-align: center;
   transition: opacity 0.25s;
+  white-space: normal; word-break: keep-all;
+  line-height: 1.5;
 }
 
 /* ── 전체 가사 패널 ── */
