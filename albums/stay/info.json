@@ -1,0 +1,10 @@
+{
+  "title": "Stay",
+  "artist": "전태은",
+  "artistId": "jeontaeeun",
+  "releaseDate": "2026-07-22",
+  "tracks": [
+    { "no": 1, "title": "Stay", "file": "01.mp3", "duration": "2:40" },
+    { "no": 2, "title": "Stay (Instrumental)", "file": "02.mp3", "duration": "2:40" }
+  ]
+}
