@@ -1,0 +1,10 @@
+{
+  "title": "Let it Girl",
+  "artist": "kiwii",
+  "artistId": "kiwii",
+  "releaseDate": "2026-07-22",
+  "tracks": [
+    { "no": 1, "title": "Let it Girl", "file": "01.mp3", "duration": "2:24" },
+    { "no": 2, "title": "Let it Girl (Instrumental)", "file": "02.mp3", "duration": "2:24" }
+  ]
+}
