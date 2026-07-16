@@ -193,10 +193,7 @@ html, body {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 100%;
   text-shadow: 0 2px 12px rgba(0,0,0,0.5);
-  opacity: 0;
-  transition: opacity 0.28s ease;
 }
-.lyric-current.show { opacity: 1; }
 
 /* ── 전체 가사 패널 ── */
 .lyrics-panel {
@@ -574,7 +571,6 @@ let albumInfo = null, tracks = [], currentIdx = 0;
 let isPlaying = false, playPromise = null;
 let hearted = false, repeatMode = 0, shuffle = false;
 let shuffleOrder = [], lyricsData = [], lastLyricIdx = -1;
-let lyricFadeTimer = null;
 
 const audio = document.getElementById('audio');
 
@@ -617,10 +613,7 @@ async function loadAlbum() {
 async function loadLyrics() {
   lyricsData = [];
   lastLyricIdx = -1;
-  clearTimeout(lyricFadeTimer);
-  const el = document.getElementById('lyricCurrent');
-  el.classList.remove('show');
-  el.textContent = '♪';
+  document.getElementById('lyricCurrent').textContent = '♪';
   try {
     const track = tracks[currentIdx];
     const no = String(track.no || (currentIdx + 1)).padStart(2, '0');
@@ -842,7 +835,7 @@ function updateTrackListPlayingState() {
   });
 }
 
-// 가사 싱크 (겹침/깜빡임 방지: 이전 페이드 타이머를 항상 취소)
+// 가사 싱크
 function updateLyricsSync(t) {
   if (!lyricsData.length) return;
   let cur = -1;
@@ -851,12 +844,7 @@ function updateLyricsSync(t) {
   lastLyricIdx = cur;
 
   const el = document.getElementById('lyricCurrent');
-  clearTimeout(lyricFadeTimer);
-  el.classList.remove('show');
-  lyricFadeTimer = setTimeout(() => {
-    el.textContent = cur >= 0 ? lyricsData[cur].text : '♪';
-    el.classList.add('show');
-  }, 220);
+  el.textContent = cur >= 0 ? lyricsData[cur].text : '♪';
 
   lyricsData.forEach((_, i) => {
     const line = document.getElementById(`ll${i}`);
