@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Music Player</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
@@ -37,6 +37,21 @@ html, body {
   align-items: center; justify-content: flex-end;
   padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
 }
+
+/* ── 상단 플로팅 버튼 (트랙리스트) ── */
+.btn-tracklist-float {
+  position: fixed; z-index: 5;
+  top: max(20px, env(safe-area-inset-top, 20px)); right: 20px;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: none; color: rgba(255,255,255,0.85);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-tracklist-float:active { background: rgba(255,255,255,0.22); transform: scale(0.92); }
+.btn-tracklist-float svg { width: 18px; height: 18px; }
 
 /* ── 앨범아트 — 애플뮤직 스타일 ── */
 .art-wrap {
@@ -166,14 +181,19 @@ html, body {
   height: 38px; display: flex;
   align-items: center; justify-content: center;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
 }
 .lyric-current {
   font-size: 14px; font-weight: 400;
   color: rgba(255,255,255,0.6);
   font-family: 'Noto Sans JP', sans-serif;
   letter-spacing: 0.3px; text-align: center;
-  transition: opacity 0.25s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
+  opacity: 0;
+  transition: opacity 0.28s ease;
 }
+.lyric-current.show { opacity: 1; }
 
 /* ── 전체 가사 패널 ── */
 .lyrics-panel {
@@ -261,6 +281,96 @@ html, body {
 .mini-play-btn svg.play  { display: none; }
 .mini-play-btn svg.pause { display: block; }
 
+/* ── 트랙리스트 패널 ── */
+.tracklist-panel {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.tracklist-panel.open { transform: translateY(0); }
+
+.tracklist-bg {
+  position: absolute; inset: 0;
+  backdrop-filter: blur(60px) brightness(0.55);
+  -webkit-backdrop-filter: blur(60px) brightness(0.55);
+  background: rgba(0,0,0,0.2);
+}
+
+.tracklist-header {
+  position: relative; z-index: 1;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: max(56px, env(safe-area-inset-top, 56px)) 28px 20px;
+}
+.tracklist-handle {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  width: 36px; height: 4px; border-radius: 99px;
+  background: rgba(255,255,255,0.25);
+}
+.tracklist-meta { display: flex; flex-direction: column; gap: 4px; }
+.tracklist-label { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.4); letter-spacing: 0.5px; }
+.tracklist-title { font-size: 21px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+.tracklist-count { font-size: 12px; color: rgba(255,255,255,0.35); }
+
+.tracklist-scroll {
+  position: relative; z-index: 1;
+  flex: 1; overflow-y: auto; padding: 4px 20px max(40px, env(safe-area-inset-bottom, 40px));
+  -webkit-overflow-scrolling: touch;
+}
+.tracklist-scroll::-webkit-scrollbar { display: none; }
+
+.track-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 10px; border-radius: 14px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+.track-item:active { background: rgba(255,255,255,0.08); }
+
+.track-num {
+  position: relative;
+  width: 22px; height: 22px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: rgba(255,255,255,0.32);
+  font-variant-numeric: tabular-nums;
+}
+.track-item.playing .track-num { color: transparent; }
+
+.eq-bars {
+  display: none; position: absolute; inset: 0;
+  align-items: flex-end; justify-content: center; gap: 2px;
+}
+.track-item.playing .eq-bars { display: flex; }
+.eq-bars span {
+  width: 3px; height: 6px; border-radius: 2px;
+  background: #fff;
+  animation: eqAnim 0.9s ease-in-out infinite;
+  animation-play-state: paused;
+  transform-origin: bottom;
+}
+.track-item.playing.is-playing .eq-bars span { animation-play-state: running; }
+.eq-bars span:nth-child(1) { height: 7px; animation-delay: 0s; }
+.eq-bars span:nth-child(2) { height: 14px; animation-delay: 0.2s; }
+.eq-bars span:nth-child(3) { height: 10px; animation-delay: 0.4s; }
+@keyframes eqAnim { 0%,100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+
+.track-item-info { flex: 1; min-width: 0; }
+.track-item-title {
+  font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.82);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 2px; transition: color 0.2s;
+}
+.track-item.playing .track-item-title { color: #fff; }
+.track-item-dur {
+  font-size: 12px; color: rgba(255,255,255,0.32);
+  font-variant-numeric: tabular-nums;
+}
+
+.tracklist-empty {
+  text-align: center; color: rgba(255,255,255,0.3);
+  font-size: 14px; padding: 60px 0;
+}
+
 /* 로딩 */
 .loading-overlay {
   position: fixed; inset: 0; z-index: 100; background: #000;
@@ -307,7 +417,7 @@ html, body {
     width: min(62vw, 340px);
   }
 
-  .lyrics-panel {
+  .lyrics-panel, .tracklist-panel {
     position: fixed; inset: 0;
     border-radius: 0;
   }
@@ -328,6 +438,14 @@ html, body {
   <div class="bg-art" id="bgArt"></div>
   <div class="bg-gradient"></div>
 </div>
+
+<button class="btn-tracklist-float" id="btnTrackListFloat" onclick="openTrackList()" aria-label="트랙 목록">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <line x1="4" y1="7" x2="20" y2="7"/>
+    <line x1="4" y1="12" x2="20" y2="12"/>
+    <line x1="4" y1="17" x2="14" y2="17"/>
+  </svg>
+</button>
 
 <div class="player">
   <div class="art-wrap">
@@ -427,6 +545,21 @@ html, body {
   </div>
 </div>
 
+<!-- 트랙리스트 패널 -->
+<div class="tracklist-panel" id="tracklistPanel">
+  <div class="tracklist-bg"></div>
+  <div class="tracklist-header">
+    <div class="tracklist-handle"></div>
+    <div class="tracklist-meta">
+      <div class="tracklist-label" id="tracklistLabel"></div>
+      <div class="tracklist-title" id="tracklistTitle"></div>
+      <div class="tracklist-count" id="tracklistCount"></div>
+    </div>
+    <button class="btn-close" onclick="closeTrackList()">✕</button>
+  </div>
+  <div class="tracklist-scroll" id="tracklistScroll"></div>
+</div>
+
 <audio id="audio" preload="auto"></audio>
 
 <script>
@@ -439,6 +572,7 @@ let albumInfo = null, tracks = [], currentIdx = 0;
 let isPlaying = false, playPromise = null;
 let hearted = false, repeatMode = 0, shuffle = false;
 let shuffleOrder = [], lyricsData = [], lastLyricIdx = -1;
+let lyricFadeTimer = null;
 
 const audio = document.getElementById('audio');
 
@@ -463,6 +597,9 @@ async function loadAlbum() {
     document.getElementById('trackArtist').textContent = albumInfo.artist;
     document.getElementById('miniArtist').textContent  = albumInfo.artist;
     document.getElementById('lyricsAlbum').textContent = albumInfo.title;
+    document.getElementById('tracklistLabel').textContent = albumInfo.artist;
+    document.getElementById('tracklistTitle').textContent = albumInfo.title;
+    document.getElementById('tracklistCount').textContent = `${tracks.length}곡`;
 
     renderDots();
     currentIdx = Math.max(0, Math.min(startNo - 1, tracks.length - 1));
@@ -470,23 +607,26 @@ async function loadAlbum() {
 
     document.getElementById('albumArt').onload  = () => setTimeout(() => document.getElementById('loadingOverlay').classList.add('done'), 300);
     document.getElementById('albumArt').onerror = () => document.getElementById('loadingOverlay').classList.add('done');
+
+    loadLyrics();
   } catch(e) { showError('앨범을 불러올 수 없어요', e.message); }
 }
 
-async function loadLyrics(idx) {
-  // 가사 초기화
+async function loadLyrics() {
   lyricsData = [];
   lastLyricIdx = -1;
-  document.getElementById('lyricCurrent').textContent = '♪';
-  renderLyricsLines();
-
+  clearTimeout(lyricFadeTimer);
+  const el = document.getElementById('lyricCurrent');
+  el.classList.remove('show');
+  el.textContent = '♪';
   try {
-    const no = String(idx + 1).padStart(2, '0');
+    const track = tracks[currentIdx];
+    const no = String(track.no || (currentIdx + 1)).padStart(2, '0');
     const res = await fetch(`${BASE}/tracks/${no}.lyrics.json`);
-    if (!res.ok) return;
+    if (!res.ok) { renderLyricsLines(); return; }
     lyricsData = await res.json();
     renderLyricsLines();
-  } catch(e) {}
+  } catch(e) { renderLyricsLines(); }
 }
 
 function renderLyricsLines() {
@@ -517,8 +657,9 @@ function loadTrack(idx) {
   audio.src = `${BASE}/tracks/${track.file}`;
   audio.load();
   document.querySelectorAll('.track-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-  loadLyrics(idx);
+  loadLyrics();
   if (isPlaying) playAudio();
+  if (document.getElementById('tracklistPanel').classList.contains('open')) renderTrackList();
 }
 
 function renderDots() {
@@ -541,10 +682,12 @@ function playAudio() {
       isPlaying = true;
       document.getElementById('btnPlay').classList.remove('paused');
       document.getElementById('miniPlay').classList.remove('paused');
+      updateTrackListPlayingState();
     }).catch(() => {
       isPlaying = false;
       document.getElementById('btnPlay').classList.add('paused');
       document.getElementById('miniPlay').classList.add('paused');
+      updateTrackListPlayingState();
     });
   }
 }
@@ -558,6 +701,7 @@ function togglePlay() {
     isPlaying = false;
     document.getElementById('btnPlay').classList.add('paused');
     document.getElementById('miniPlay').classList.add('paused');
+    updateTrackListPlayingState();
   }
 }
 
@@ -586,12 +730,14 @@ audio.addEventListener('ended', () => {
       document.getElementById('btnPlay').classList.add('paused');
       document.getElementById('miniPlay').classList.add('paused');
       audio.currentTime = 0;
+      updateTrackListPlayingState();
     } else if (tracks.length > 1) { nextTrack(); }
     else {
       isPlaying = false;
       document.getElementById('btnPlay').classList.add('paused');
       document.getElementById('miniPlay').classList.add('paused');
       audio.currentTime = 0;
+      updateTrackListPlayingState();
     }
   }
 });
@@ -601,7 +747,6 @@ function toggleRepeat() {
   repeatMode = (repeatMode + 1) % 3;
   const icon  = document.getElementById('iconRepeat');
   const badge = document.getElementById('repeatBadge');
-  const btn   = document.getElementById('btnRepeat');
   icon.style.opacity = repeatMode > 0 ? '1' : '0.35';
   badge.style.opacity = repeatMode === 2 ? '1' : '0';
 }
@@ -645,18 +790,72 @@ let lyricsTouchY = 0;
 document.getElementById('lyricsPanel').addEventListener('touchstart', e => { lyricsTouchY = e.touches[0].clientY; });
 document.getElementById('lyricsPanel').addEventListener('touchend',   e => { if (e.changedTouches[0].clientY - lyricsTouchY > 80) closeLyrics(); });
 
-// 가사 싱크
+// 트랙리스트 패널
+function openTrackList()  { renderTrackList(); document.getElementById('tracklistPanel').classList.add('open'); }
+function closeTrackList() { document.getElementById('tracklistPanel').classList.remove('open'); }
+
+let tracklistTouchY = 0;
+document.getElementById('tracklistPanel').addEventListener('touchstart', e => { tracklistTouchY = e.touches[0].clientY; });
+document.getElementById('tracklistPanel').addEventListener('touchend',   e => { if (e.changedTouches[0].clientY - tracklistTouchY > 80) closeTrackList(); });
+
+function renderTrackList() {
+  const scroll = document.getElementById('tracklistScroll');
+  scroll.innerHTML = '';
+  if (!tracks.length) { scroll.innerHTML = '<div class="tracklist-empty">트랙이 없어요</div>'; return; }
+
+  tracks.forEach((track, i) => {
+    const isCurrent = i === currentIdx;
+    const item = document.createElement('div');
+    item.className = 'track-item' + (isCurrent ? ' playing' : '') + (isCurrent && isPlaying ? ' is-playing' : '');
+    item.dataset.idx = i;
+    item.onclick = () => {
+      const wasCurrent = i === currentIdx;
+      loadTrack(i);
+      if (!isPlaying) playAudio();
+      else if (wasCurrent) { /* 같은 곡이면 재생 유지 */ }
+      closeTrackList();
+    };
+    item.innerHTML = `
+      <div class="track-num">
+        ${i + 1}
+        <div class="eq-bars"><span></span><span></span><span></span></div>
+      </div>
+      <div class="track-item-info">
+        <div class="track-item-title"></div>
+        <div class="track-item-dur"></div>
+      </div>
+    `;
+    item.querySelector('.track-item-title').textContent = track.title;
+    item.querySelector('.track-item-dur').textContent = track.duration || '';
+    scroll.appendChild(item);
+  });
+}
+
+function updateTrackListPlayingState() {
+  const items = document.querySelectorAll('#tracklistScroll .track-item');
+  items.forEach(item => {
+    const idx = parseInt(item.dataset.idx, 10);
+    item.classList.toggle('playing', idx === currentIdx);
+    item.classList.toggle('is-playing', idx === currentIdx && isPlaying);
+  });
+}
+
+// 가사 싱크 (겹침/깜빡임 방지: 이전 페이드 타이머를 항상 취소)
 function updateLyricsSync(t) {
   if (!lyricsData.length) return;
   let cur = -1;
   for (let i = 0; i < lyricsData.length; i++) { if (lyricsData[i].time !== undefined && t >= lyricsData[i].time) cur = i; }
   if (cur === lastLyricIdx) return;
   lastLyricIdx = cur;
+
   const el = document.getElementById('lyricCurrent');
-  if (cur >= 0) {
-    el.style.opacity = '0';
-    setTimeout(() => { el.textContent = lyricsData[cur].text; el.style.opacity = '1'; }, 200);
-  }
+  clearTimeout(lyricFadeTimer);
+  el.classList.remove('show');
+  lyricFadeTimer = setTimeout(() => {
+    el.textContent = cur >= 0 ? lyricsData[cur].text : '♪';
+    el.classList.add('show');
+  }, 220);
+
   lyricsData.forEach((_, i) => {
     const line = document.getElementById(`ll${i}`);
     if (!line) return;
